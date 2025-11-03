@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: optiroute
+      POSTGRES_PASSWORD: optiroute123
+      POSTGRES_DB: optiroute
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: optiroute
+      RABBITMQ_DEFAULT_PASS: optiroute123
+
+  upload-service:
+    build:
+      context: ./services/upload-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://optiroute:optiroute123@postgres:5432/optiroute
+      RABBITMQ_URL: amqp://optiroute:optiroute123@rabbitmq:5672/
+    volumes:
+      - shared_uploads:/app/shared/uploads
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  optimization-service:
+    build:
+      context: ./services/optimization-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://optiroute:optiroute123@postgres:5432/optiroute
+      RABBITMQ_URL: amqp://optiroute:optiroute123@rabbitmq:5672/
+    volumes:
+      - shared_uploads:/app/shared/uploads
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  results-service:
+    build:
+      context: ./services/results-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://optiroute:optiroute123@postgres:5432/optiroute
+    depends_on:
+      - postgres
+
+  data-aggregator-service:
+    build:
+      context: ./services/data-aggregator-service
+      dockerfile: Dockerfile
+    environment:
+      OPENWEATHERMAP_API_KEY: "your_api_key_here"
+      OPENAQ_API_KEY: "your_api_key_here"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - upload-service
+      - results-service
+      - data-aggregator-service
+
+volumes:
+  postgres_data:
+  shared_uploads:
