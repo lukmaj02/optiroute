@@ -5,7 +5,6 @@ from typing import List, Dict, Any, Optional
 # Adres URL API TomTom Waypoint Optimization
 TOMTOM_API_URL = "https://api.tomtom.com/routing/waypointoptimization/1"
 
-# Funkcja pomocnicza do formatowania lokalizacji dla TomTom
 def format_locations_for_tomtom(stops: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Konwertuje naszą listę przystanków na format JSON wymagany przez TomTom.
@@ -22,8 +21,6 @@ def format_locations_for_tomtom(stops: List[Dict[str, Any]]) -> List[Dict[str, A
             })
     return locations
 
-
-# Główna funkcja optymalizacji trasy z TomTom
 def optimize_route_with_tomtom(job_id: str, stops: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """
     Wysyła listę przystanków do TomTom Waypoint Optimization API
@@ -42,17 +39,23 @@ def optimize_route_with_tomtom(job_id: str, stops: List[Dict[str, Any]]) -> Opti
 
     # Budujemy pełny URL z kluczem API
     url = f"{TOMTOM_API_URL}?key={api_key}"
-    
-    # budowanie ładunku żądania (JSON) 
+    # Budujemy ładunek JSON zgodny z dokumentacją TomTom
     payload = {
         "waypoints": locations_payload,
         "options": {
             "travelMode": "car",
             "traffic": "live",
-            "departAt": "now" 
+            "departAt": "now",
+            "waypointConstraints": {
+                "originIndex": -1,
+                "destinationIndex": -1
+            },
+            
+            "outputExtensions": ["travelTimes", "routeLengths"]
         }
     }
-    # Logowanie wysyłanych danych
+  
+
     print(f"[{job_id}] Wysyłanie {len(locations_payload)} punktów do TomTom API (Waypoint Optimization) na adres: {TOMTOM_API_URL}", flush=True)
     
     try:
@@ -61,6 +64,7 @@ def optimize_route_with_tomtom(job_id: str, stops: List[Dict[str, Any]]) -> Opti
             response.raise_for_status()
             data = response.json()
             
+            # SUKCES!
             print(f"[{job_id}] Otrzymano pomyślną odpowiedź z TomTom.", flush=True)
             return data
 

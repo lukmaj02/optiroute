@@ -242,3 +242,9 @@ Jeśli masz pytania dotyczące projektu, umieść issue w repozytorium lub skont
 ---
 
 Plik README zawiera podstawowe instrukcje szybkiego startu i wskazówki deweloperskie. Jeśli chcesz, mogę dopisać szczegółową dokumentację endpointów (OpenAPI), przykładowe payloady lub instrukcje CI/CD.
+
+## Postęp prac i następne kroki
+
+Aktualny status znajduje się także w pliku `TODO.md` w katalogu głównym repozytorium — tam będziemy dodawać kolejne etapy rozwoju, priorytety i krótkie opisy zadań.
+
+
