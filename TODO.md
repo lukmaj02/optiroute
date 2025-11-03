@@ -48,15 +48,42 @@ Statusy: [TODO], [IN-PROGRESS], [DONE]
 
 ## Priorytet Niski
 
-- [TODO] CI (GitHub Actions) (niski) — Uruchamianie testów, lint, budowanie obrazów Docker na PR.
-- [TODO] Mocki zewnętrznych API dla testów (niski) — Stworzyć mocki TomTom/Nominatim/OpenWeatherMap/OpenAQ do testów integracyjnych.
-- [TODO] Cache geokodowania (niski) — Lokalny cache dla często występujących adresów, by zaoszczędzić limity API.
+- [TODO] CI/CD Pipeline (niski):
+  - GitHub Actions dla testów i lintingu
+  - Automatyczne buildy Docker na PR
+  - Deploy na środowisko staging
+  - Kontrola jakości kodu (SonarQube)
+
+- [TODO] Mocki do testów (niski):
+  - Mock serwer dla TomTom API
+  - Mock serwer dla Nominatim
+  - Mock serwer dla OpenWeatherMap/OpenAQ
+  - Fixture'y dla testów integracyjnych
+
+- [TODO] Optymalizacje (niski):
+  - Cache geokodowania (Redis)
+  - Batch processing dla dużych plików
+  - Optymalizacja zapytań PostgreSQL
+  - Kompresja odpowiedzi API
 
 ## Pomysły długoterminowe
 
-- Integracja z innymi dostawcami routingu (np. OSRM) jako alternatywa do TomTom.
-- Interaktywne UI z możliwością edycji trasy i ręcznego przypisywania priorytetów dla przystanków.
-- Optymalizacje kosztowe (koszty paliwa, uprawnienia kierowców, zmiany tras w czasie rzeczywistym).
+- Alternatywni dostawcy routingu:
+  - Integracja z OSRM (Open Source Routing Machine)
+  - GraphHopper jako backup dla TomTom
+  - Własny solver dla prostych tras
+
+- Rozszerzenia UI:
+  - Edycja trasy przez przeciąganie punktów
+  - Priorytety dla przystanków
+  - Ręczne dostrajanie algorytmu
+  - Eksport do różnych formatów (PDF, GPX)
+
+- Optymalizacje biznesowe:
+  - Koszty paliwa i amortyzacji
+  - Ograniczenia czasowe kierowców
+  - Dynamiczne modyfikatory tras
+  - Integracja z systemami GPS
 
 ---
 
