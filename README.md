@@ -8,13 +8,18 @@ Projekt zawiera frontend (React + Vite) oraz kilka usług backendowych w Pythoni
 
 #### Zaimplementowane funkcjonalności:
 - ✅ Podstawowa struktura mikroserwisów
-- ✅ Upload plików CSV z adresami
+- ✅ Upload plików CSV z adresami (drag & drop)
 - ✅ Geokodowanie adresów (Nominatim API)
 - ✅ Kolejkowanie zadań (RabbitMQ)
-- ✅ System śledzenia statusu zadań
-- ✅ Integracja z TomTom Routing API
+- ✅ System śledzenia statusu zadań w czasie rzeczywistym
+- ✅ Integracja z TomTom Routing API (optymalizacja + geometria trasy)
 - ✅ Agregacja danych środowiskowych (pogoda, jakość powietrza)
-- ✅ Interfejs użytkownika z wizualizacją map
+- ✅ Interaktywna wizualizacja tras z react-leaflet
+- ✅ Obliczanie i wizualizacja zoptymalizowanej kolejności przystanków
+- ✅ Podgląd szczegółowych informacji o trasie (czas, dystans)
+- ✅ Obsługa błędów geokodowania i API
+- ✅ Persystencja danych w PostgreSQL
+- ✅ Load balancing i reverse proxy (Nginx)
 
 #### Modyfikatory tras:
 System uwzględnia następujące czynniki wpływające na czas przejazdu:

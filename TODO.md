@@ -11,16 +11,40 @@ Statusy: [TODO], [IN-PROGRESS], [DONE]
 
 ## Priorytet Wysoki
 
-- [IN-PROGRESS] Zaktualizować README i dodać plik TODO (wysokie) — Dodać dokumentację postępu prac i planów rozwoju.
-- [TODO] Testy jednostkowe dla serwisów (wysokie) — Dodać pytest do każdego serwisu, pokryć krytyczne funkcje: geokodowanie, upload, results.
-- [TODO] Dokumentacja API (OpenAPI / Swagger) (wysokie) — Dodać automatycznie generowane specyfikacje dla każdego serwisu REST.
-- [TODO] Mechanizmy retry/timeout i obsługa błędów (wysokie) — Ulepszyć komunikację z zewnętrznymi API (TomTom, Nominatim, OpenWeatherMap) poprzez retry/backoff i timeouts.
+- [DONE] Zaktualizować README i dodać plik TODO (wysokie) — Dodać dokumentację postępu prac i planów rozwoju.
+- [DONE] Integracja z TomTom API (wysokie) — Implementacja optymalizacji tras i pobierania geometrii.
+- [DONE] Wizualizacja tras (wysokie) — Interaktywna mapa z react-leaflet.
+- [TODO] Testy jednostkowe (wysokie):
+  - Upload Service: walidacja CSV, obsługa błędów
+  - Optimization Service: geokodowanie, optymalizacja
+  - Results Service: obsługa statusów, format odpowiedzi
+  - Frontend: komponenty React, integracja API
+- [TODO] Dokumentacja API (OpenAPI / Swagger) (wysokie):
+  - Automatyczna generacja dokumentacji FastAPI
+  - Przykłady użycia dla każdego endpointu
+  - Opis schematów danych
+- [TODO] Mechanizmy retry/timeout i obsługa błędów (wysokie):
+  - Nominatim: rate limiting, cache
+  - TomTom: obsługa błędów API, retry
+  - RabbitMQ: dead letter queue
+  - Frontend: obsługa timeout, wskaźniki postępu
 
 ## Priorytet Średni
 
-- [TODO] Monitoring i metryki (Prometheus + Grafana) (średni) — Eksportować metryki z serwisów i RabbitMQ.
-- [TODO] Healthchecks i readiness/liveness (średni) — Dodać endpointy health i konfigurację w Docker Compose / k8s.
-- [TODO] Walidacja i skalowanie uploadu (średni) — Lepiej walidować CSV i wspierać większe pliki (chunking / stream processing).
+- [TODO] Monitoring i metryki (średni):
+  - Prometheus: metryki aplikacji (latencja, błędy)
+  - Grafana: dashboardy dla każdego serwisu
+  - RabbitMQ: monitorowanie kolejek i konsumentów
+  - Postgres: statystyki zapytań i wydajność
+- [TODO] Healthchecks i readiness/liveness (średni):
+  - Endpointy health dla każdego serwisu
+  - Integracja z Docker Compose healthcheck
+  - Monitoring dostępności API zewnętrznych
+- [TODO] Walidacja i skalowanie (średni):
+  - Walidacja struktury i zawartości CSV
+  - Chunking dla dużych plików
+  - Wsparcie dla wielu formatów wejściowych
+  - Rate limiting na poziomie Nginx
 
 ## Priorytet Niski
 
