@@ -1,5 +1,8 @@
 ## OptiRoute
 
+##EDIT: 
+Dawid -> dodany został serwis autentykacyjny z haszowaniem, panele do rejestracji i logowania oraz load-screen. Po zalogowaniu sesja powinna trwać 3minuty. 
+
 Kompleksowy projekt demonstracyjny implementujący architekturę mikroserwisów do obsługi przesyłania, optymalizacji tras i agregacji wyników.
 
 Projekt zawiera frontend (React + Vite) oraz kilka usług backendowych w Pythonie, uruchamianych za pomocą Docker Compose.
