@@ -1,13 +1,81 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoute - Loading</title>
+    <style>
+        body {
+            margin: 20px auto;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container { text-align: center; }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 1s ease-out forwards;
+        }
+
+        .logo span { color: #4CAF50; }
+
+        .loader {
+            margin-top: 20px;
+            width: 200px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out 0.5s forwards;
+        }
+
+        .bar {
+            width: 0%;
+            height: 100%;
+            background: #4CAF50;
+            animation: load 2.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes load {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
+    <div class="container">
+        <div class="logo">Opti<span>Route</span></div>
+        <div class="loader">
+            <div class="bar"></div>
+        </div>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const token = localStorage.getItem('optiroute_token');
+            
+            if (token) {
+                console.log("Wykryto token, przekierowanie do mapy...");
+                window.location.href = '/dashboard.html';
+            } else {
+                console.log("Brak tokena, przekierowanie do logowania...");
+                window.location.href = '/login.html';
+            }
+        }, 3000);
+    </script>
 </body>
 </html>
