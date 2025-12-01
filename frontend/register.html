@@ -11,13 +11,13 @@
             justify-content: center; 
             align-items: center; 
             height: 100vh; 
-            background-color: #1a1a1a; /* Ciemne tło */
+            background-color: #1a1a1a;
             margin: 0;
             color: #ffffff;
         }
         
         .login-box { 
-            background-color: #2d2d2d; /* Ciemnoszary boks */
+            background-color: #2d2d2d;
             padding: 2.5rem; 
             border-radius: 12px; 
             box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
@@ -34,7 +34,7 @@
         }
 
         h2 span {
-            color: #4CAF50; /* Zielony akcent */
+            color: #4CAF50;
         }
         
         input { 
@@ -44,7 +44,7 @@
             box-sizing: border-box; 
             border: 1px solid #444; 
             border-radius: 6px; 
-            background-color: #333; /* Ciemne pole input */
+            background-color: #333;
             color: white;
             font-size: 1rem;
             outline: none;
@@ -58,7 +58,7 @@
         button { 
             width: 100%; 
             padding: 12px; 
-            background-color: #4CAF50; /* Zielony przycisk */
+            background-color: #4CAF50;
             color: white; 
             border: none; 
             border-radius: 6px; 
@@ -115,13 +115,13 @@
 <body>
 
     <div class="login-box">
-        <!-- Spójny nagłówek z login.html -->
         <h2>Opti<span>Route</span></h2>
         
-        <!-- Komunikaty -->
         <div id="msgBox" class="message"></div>
 
         <form id="registerForm">
+            <input type="name" id="name" placeholder="Name" required>
+            <input type="surname" id="surname" placeholder="Surname" required>
             <input type="email" id="email" placeholder="Adres email" required>
             <input type="password" id="password" placeholder="Hasło (min. 5 znaków)" required minlength="5">
             <input type="password" id="confirmPassword" placeholder="Powtórz hasło" required>
@@ -145,11 +145,12 @@
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const name = document.getElementById('name').value;
+            const surname = document.getElementById('surname').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
-            // Reset widoczności błędów przy nowej próbie
             msgBox.style.display = 'none';
 
             if (password !== confirmPassword) {
@@ -161,7 +162,7 @@
                 const response = await fetch('http://localhost:8001/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: password })
+                    body: JSON.stringify({ name: name, surname: surname, email: email, password: password })
                 });
 
                 if (response.ok) {

@@ -131,6 +131,11 @@
     </div>
 
     <script>
+        const redirectByRole = (role) => {
+            // Jeden panel dla wszystkich ról
+            window.location.replace('/panel.html');
+        };
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -156,12 +161,13 @@
                     const data = await response.json();
                     
                     localStorage.setItem('optiroute_token', data.access_token);
+                    localStorage.setItem('optiroute_role', data.role || 'user');
                     
                     msgSuccess.textContent = "Zalogowano!";
                     msgSuccess.style.display = 'block';
 
                     setTimeout(() => {
-                        window.location.replace('/dashboard.html');
+                        redirectByRole(data.role);
                     }, 1000);
 
                 } else {
