@@ -11,7 +11,10 @@ interface JobResult {
 }
 
 function App() {
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(() => {
+    const stored = localStorage.getItem('optiroute_job_id');
+    return stored || null;
+  });
   const [jobResult, setJobResult] = useState<JobResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +47,7 @@ function App() {
     setJobId(null);
     setJobResult(null);
     setError(null);
+    localStorage.removeItem('optiroute_job_id');
   };
 
   // ----- Logika Wyświetlania (z nowymi klasami CSS) -----

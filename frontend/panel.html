@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoute - Panel</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #151821;
+            --border: #202532;
+            --text: #f1f5f9;
+            --muted: #cdd9e5;
+            --accent: #4CAF50;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 32px; background: var(--bg); color: var(--text); }
+        .wrap { max-width: 1100px; margin: 0 auto; }
+        h1 { margin: 0 0 4px 0; color: var(--accent); }
+        p { margin: 0 0 16px 0; color: var(--muted); }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 14px; }
+        .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        input, select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0b0d12; color: var(--text); }
+        button { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .message { margin-top: 10px; padding: 10px; border-radius: 8px; display: none; }
+        .message.show { display: block; }
+        .message.success { background: rgba(76, 175, 80, 0.15); border: 1px solid rgba(76,175,80,0.4); color: #b8ffcb; }
+        .message.error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.4); color: #fecaca; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; color: var(--muted); }
+        th { color: var(--text); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .tag { padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="section-header">
+            <div>
+                <h1>OptiRoute</h1>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                <button id="logoutBtn" class="btn-danger">Wyloguj</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Moje konto</h3>
+            <div class="row">
+                <div class="field">
+                    <label>Imię</label>
+                    <input id="uName" type="text" disabled>
+                </div>
+                <div class="field">
+                    <label>Nazwisko</label>
+                    <input id="uSurname" type="text" disabled>
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input id="uEmail" type="text" disabled>
+                </div>
+                <div class="field">
+                    <label>Rola</label>
+                    <input id="uRole" type="text" disabled>
+                </div>
+            </div>
+            <div class="row" style="margin-top:12px;">
+                <div class="field">
+                    <label>Stare hasło</label>
+                    <input id="oldPass" type="password" placeholder="Aktualne hasło">
+                </div>
+                <div class="field">
+                    <label>Nowe hasło</label>
+                    <input id="newPass" type="password" placeholder="Nowe hasło">
+                </div>
+            </div>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                <button id="changePassBtn" class="btn-primary">Zapisz nowe hasło</button>
+            </div>
+            <div id="passMsg" class="message"></div>
+        </div>
+
+        <div class="panel" id="addRequestPanel">
+            <h3>Dodaj zgłoszenie</h3>
+            <div class="row" style="margin-top:8px;">
+                <input id="reqTitle" type="text" placeholder="Tytuł zgłoszenia" required>
+                <input id="reqLocation" type="text" placeholder="Lokalizacja" required>
+                <input id="reqDescription" type="text" placeholder="Opis (opcjonalnie)">
+                <button id="addRequestBtn" class="btn-primary">Dodaj zgłoszenie</button>
+            </div>
+            <div id="reqMsg" class="message"></div>
+        </div>
+
+        <div class="panel" id="myRequestsPanel">
+            <div class="section-header">
+                <h3>Moje zgłoszenia</h3>
+                <button id="refreshMyRequests" class="btn-ghost">Odśwież</button>
+            </div>
+            <table id="myRequestsTable">
+                <thead>
+                    <tr><th>ID</th><th>Tytuł</th><th>Lokalizacja</th><th>Status</th><th>Kurier</th><th>Utworzono</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="panel" id="assignedPanel">
+            <div class="section-header">
+                <h3>Zgłoszenia przypisane do mnie</h3>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button id="refreshAssigned" class="btn-ghost">Odśwież</button>
+                    <button id="showRoute" class="btn-primary">Pokaż trasę</button>
+                </div>
+            </div>
+            <table id="assignedTable">
+                <thead>
+                    <tr><th>ID</th><th>Tytuł</th><th>Lokalizacja</th><th>Status</th><th>Kurier</th><th>Utworzono</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div id="assignedMsg" class="message"></div>
+        </div>
+
+        <div class="panel" id="allRequestsPanel">
+            <div class="section-header">
+                <h3>Wszystkie zgłoszenia</h3>
+                <button id="refreshRequests" class="btn-ghost">Odśwież</button>
+                <button id="exportRequests" class="btn-ghost">Eksport CSV</button>
+            </div>
+            <table id="requestsTable">
+                <thead>
+                    <tr><th>ID</th><th>Tytuł</th><th>Lokalizacja</th><th>Status</th><th>Kurier</th><th>User ID</th><th>Utworzono</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="panel" id="usersPanel">
+            <div class="section-header">
+                <h3>Lista użytkowników</h3>
+                <button id="refreshUsers" class="btn-ghost">Odśwież</button>
+            </div>
+            <table id="usersTable">
+                <thead>
+                    <tr><th>ID</th><th>Imię</th><th>Nazwisko</th><th>Email</th><th>Rola</th><th>Utworzono</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+        const UPLOAD_URL = '/api/v1/upload';
+        const token = localStorage.getItem('optiroute_token');
+        const role = (localStorage.getItem('optiroute_role') || '').toLowerCase();
+        if (!token) {
+            window.location.replace('/login.html');
+        }
+        const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+        const msg = (el, text, type='success') => { el.textContent = text; el.className = `message show ${type}`; };
+
+        const addRequestPanel = document.getElementById('addRequestPanel');
+        const myRequestsPanel = document.getElementById('myRequestsPanel');
+        const assignedPanel = document.getElementById('assignedPanel');
+        const allRequestsPanel = document.getElementById('allRequestsPanel');
+        const usersPanel = document.getElementById('usersPanel');
+
+        // role-based visibility
+        const isAdmin = role === 'admin';
+        const isDriver = role === 'driver';
+        addRequestPanel.style.display = (isAdmin || role === 'user') ? 'block' : 'none';
+        myRequestsPanel.style.display = (isAdmin || role === 'user') ? 'block' : 'none';
+        assignedPanel.style.display = isDriver ? 'block' : 'none';
+        allRequestsPanel.style.display = isAdmin ? 'block' : 'none';
+        usersPanel.style.display = isAdmin ? 'block' : 'none';
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('optiroute_token');
+            localStorage.removeItem('optiroute_role');
+            window.location.replace('/login.html');
+        });
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${API_BASE}/me`, { headers });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                document.getElementById('uName').value = data.name || '';
+                document.getElementById('uSurname').value = data.surname || '';
+                document.getElementById('uEmail').value = data.email || '';
+                document.getElementById('uRole').value = data.role || '';
+            } catch (err) {
+                alert('Nie udało się pobrać profilu. Zaloguj się ponownie.');
+                window.location.replace('/login.html');
+            }
+        }
+
+        document.getElementById('changePassBtn').addEventListener('click', async () => {
+            const old_password = document.getElementById('oldPass').value;
+            const new_password = document.getElementById('newPass').value;
+            const passMsg = document.getElementById('passMsg');
+            if (!old_password || !new_password) {
+                msg(passMsg, 'Uzupełnij oba pola hasła', 'error'); return;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/me/password`, {
+                    method: 'POST', headers, body: JSON.stringify({ old_password, new_password })
+                });
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    msg(passMsg, e.detail || 'Nie udało się zmienić hasła', 'error');
+                    return;
+                }
+                msg(passMsg, 'Hasło zostało zmienione', 'success');
+                document.getElementById('oldPass').value = '';
+                document.getElementById('newPass').value = '';
+            } catch (err) {
+                msg(passMsg, 'Błąd sieci podczas zmiany hasła', 'error');
+            }
+        });
+
+        const reqMsg = document.getElementById('reqMsg');
+        const assignedMsg = document.getElementById('assignedMsg');
+        document.getElementById('addRequestBtn').addEventListener('click', async () => {
+            const title = document.getElementById('reqTitle').value;
+            const description = document.getElementById('reqDescription').value || null;
+            const location = document.getElementById('reqLocation').value || null;
+            if (!title || !location) {
+                msg(reqMsg, 'Uzupełnij tytuł i lokalizację', 'error'); return;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/requests`, {
+                    method: 'POST', headers, body: JSON.stringify({ title, description, location })
+                });
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    msg(reqMsg, e.detail || 'Nie udało się dodać zgłoszenia', 'error'); return;
+                }
+                msg(reqMsg, 'Zgłoszenie dodane', 'success');
+                document.getElementById('reqTitle').value = '';
+                document.getElementById('reqDescription').value = '';
+                document.getElementById('reqLocation').value = '';
+                await loadMyRequests();
+            } catch (err) {
+                msg(reqMsg, 'Błąd sieci przy dodawaniu zgłoszenia', 'error');
+            }
+        });
+
+        async function loadMyRequests() {
+            const tbody = document.querySelector('#myRequestsTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6">Ładowanie...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/requests/mine`, { headers });
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">Brak rekordów</td></tr>'; return; }
+                data.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.location ?? ''}</td><td>${r.status ?? ''}</td><td>${r.courier_number ?? ''}</td><td>${r.created_at ?? ''}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6">Błąd ładowania</td></tr>';
+            }
+        }
+
+        async function loadAssigned() {
+            const tbody = document.querySelector('#assignedTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6">Ładowanie...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/requests/assigned`, { headers });
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">Brak rekordów</td></tr>'; return; }
+                data.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.location ?? ''}</td><td>${r.status ?? ''}</td><td>${r.courier_number ?? ''}</td><td>${r.created_at ?? ''}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6">Błąd ładowania</td></tr>';
+            }
+        }
+
+        async function loadAllRequests() {
+            const tbody = document.querySelector('#requestsTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7">Ładowanie...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/admin/requests`, { headers });
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if (!data.length) { tbody.innerHTML = '<tr><td colspan="7">Brak rekordów</td></tr>'; return; }
+                data.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.location ?? ''}</td><td>${r.status ?? ''}</td><td>${r.courier_number ?? ''}</td><td>${r.user_id}</td><td>${r.created_at ?? ''}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="7">Błąd ładowania</td></tr>';
+            }
+        }
+
+        async function loadUsers() {
+            const tbody = document.querySelector('#usersTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6">Ładowanie...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE}/admin/users`, { headers });
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">Brak użytkowników</td></tr>'; return; }
+                data.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${user.id}</td><td>${user.name}</td><td>${user.surname}</td><td>${user.email}</td><td>${user.role}</td><td>${user.created_at ?? ''}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6">Błąd ładowania</td></tr>';
+            }
+        }
+
+        document.getElementById('refreshMyRequests').addEventListener('click', loadMyRequests);
+        document.getElementById('refreshAssigned').addEventListener('click', loadAssigned);
+        document.getElementById('refreshRequests').addEventListener('click', loadAllRequests);
+        document.getElementById('refreshUsers').addEventListener('click', loadUsers);
+        document.getElementById('showRoute').addEventListener('click', async () => {
+            if (!isDriver && !isAdmin) { return; }
+            assignedMsg.className = 'message'; assignedMsg.style.display = 'none';
+            try {
+                const res = await fetch(`${API_BASE}/requests/assigned/export`, { headers });
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    msg(assignedMsg, e.detail || 'Nie udało się pobrać CSV', 'error'); return;
+                }
+                const blob = await res.blob();
+                const file = new File([blob], 'assigned.csv', { type: 'text/csv' });
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const uploadRes = await fetch(UPLOAD_URL, { method: 'POST', body: formData });
+                if (!uploadRes.ok) {
+                    const e = await uploadRes.json().catch(() => ({}));
+                    msg(assignedMsg, e.detail || 'Nie udało się przesłać pliku do obliczenia trasy', 'error');
+                    return;
+                }
+                const data = await uploadRes.json();
+                msg(assignedMsg, `Trasa została zlecona. Job ID: ${data.job_id || 'N/A'}`, 'success');
+                if (data.job_id) {
+                    localStorage.setItem('optiroute_job_id', data.job_id);
+                    setTimeout(() => window.location.replace('/dashboard.html'), 800);
+                }
+            } catch (err) {
+                msg(assignedMsg, 'Błąd podczas generowania lub wysyłania CSV', 'error');
+            }
+        });
+        document.getElementById('exportRequests').addEventListener('click', async () => {
+            try {
+                const res = await fetch(`${API_BASE}/admin/requests/export`, { headers });
+                if (!res.ok) { alert('Nie udało się wyeksportować CSV'); return; }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'requests.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                alert('Błąd eksportu CSV');
+            }
+        });
+
+        // initial load
+        loadProfile();
+        if (isAdmin || role === 'user') loadMyRequests();
+        if (isAdmin) { loadAllRequests(); loadUsers(); loadAssigned(); }
+        else if (isDriver) { loadAssigned(); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoute - Rejestracja</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background-color: #1a1a1a;
+            margin: 0;
+            color: #ffffff;
+        }
+        
+        .login-box { 
+            background-color: #2d2d2d;
+            padding: 2.5rem; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
+            width: 350px; 
+            border: 1px solid #3d3d3d;
+        }
+
+        h2 { 
+            text-align: center; 
+            color: white; 
+            margin-bottom: 2rem; 
+            font-size: 2rem;
+            margin-top: 0;
+        }
+
+        h2 span {
+            color: #4CAF50;
+        }
+        
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            box-sizing: border-box; 
+            border: 1px solid #444; 
+            border-radius: 6px; 
+            background-color: #333;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #4CAF50;
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #4CAF50;
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 1rem;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover { 
+            background-color: #43a047; 
+        }
+        
+        .link { 
+            text-align: center; 
+            margin-top: 20px; 
+            font-size: 0.9rem; 
+            color: #aaa;
+        }
+        
+        .link a { 
+            color: #4CAF50; 
+            text-decoration: none; 
+            font-weight: bold;
+        }
+        
+        .link a:hover { 
+            text-decoration: underline; 
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+        }
+
+        .error { 
+            background-color: rgba(244, 67, 54, 0.1); 
+            color: #ff5252; 
+            border: 1px solid #ff5252; 
+        }
+        
+        .success { 
+            background-color: rgba(76, 175, 80, 0.1); 
+            color: #4CAF50; 
+            border: 1px solid #4CAF50; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2>Opti<span>Route</span></h2>
+        
+        <div id="msgBox" class="message"></div>
+
+        <form id="registerForm">
+            <input type="name" id="name" placeholder="Name" required>
+            <input type="surname" id="surname" placeholder="Surname" required>
+            <input type="email" id="email" placeholder="Adres email" required>
+            <input type="password" id="password" placeholder="Hasło (min. 5 znaków)" required minlength="5">
+            <input type="password" id="confirmPassword" placeholder="Powtórz hasło" required>
+            <button type="submit">Zarejestruj się</button>
+        </form>
+
+        <div class="link">
+            Masz już konto? <a href="login.html">Zaloguj się</a>
+        </div>
+    </div>
+
+    <script>
+        const msgBox = document.getElementById('msgBox');
+
+        function showMessage(text, type) {
+            msgBox.textContent = text;
+            msgBox.className = 'message ' + type;
+            msgBox.style.display = 'block';
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const surname = document.getElementById('surname').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            msgBox.style.display = 'none';
+
+            if (password !== confirmPassword) {
+                showMessage("Hasła muszą być takie same!", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8001/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, surname: surname, email: email, password: password })
+                });
+
+                if (response.ok) {
+                    showMessage("Konto utworzone! Przekierowanie do logowania...", "success");
+                    document.getElementById('registerForm').reset();
+                    
+                    setTimeout(() => {
+                        window.location.href = "login.html";
+                    }, 2000);
+                } else {
+                    const errorData = await response.json();
+                    showMessage("Błąd: " + (errorData.detail || "Nie udało się zarejestrować"), "error");
+                }
+            } catch (error) {
+                console.error(error);
+                showMessage("Błąd połączenia z serwerem.", "error");
+            }
+        });
+    </script>
+</body>
+</html>
