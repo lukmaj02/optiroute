@@ -36,6 +36,13 @@
         th { color: var(--text); }
         .section-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
         .tag { padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--border); }
+        .autocomplete-container { position: relative; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--panel); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; max-height: 300px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .autocomplete-list.show { display: block; }
+        .autocomplete-item { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s; font-size: 0.95rem; line-height: 1.4; }
+        .autocomplete-item:hover { background: rgba(255,255,255,0.05); }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-loading { padding: 10px; text-align: center; color: var(--muted); font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -89,7 +96,10 @@
             <h3>Dodaj zgłoszenie</h3>
             <div class="row" style="margin-top:8px;">
                 <input id="reqTitle" type="text" placeholder="Tytuł zgłoszenia" required>
-                <input id="reqLocation" type="text" placeholder="Lokalizacja" required>
+                <div class="autocomplete-container" style="grid-column: span 1;">
+                    <input id="reqLocation" type="text" placeholder="np. Wrocław, Rynek 1 lub Rynek (bez miasta)" required autocomplete="off">
+                    <div id="locationSuggestions" class="autocomplete-list"></div>
+                </div>
                 <input id="reqDescription" type="text" placeholder="Opis (opcjonalnie)">
                 <button id="addRequestBtn" class="btn-primary">Dodaj zgłoszenie</button>
             </div>
@@ -126,7 +136,7 @@
             <div id="assignedMsg" class="message"></div>
         </div>
 
-        <div class="panel" id="allRequestsPanel">
+        <div class="panel" id="createUserPanel">
             <div class="section-header">
                 <h3>Wszystkie zgłoszenia</h3>
                 <button id="refreshRequests" class="btn-ghost">Odśwież</button>
@@ -140,6 +150,40 @@
             </table>
         </div>
 
+        <div class="panel" id="createUserPanel" style="display: none;">
+            <h3>Utwórz nowego użytkownika</h3>
+            <div class="row" style="margin-top:8px;">
+                <div class="field">
+                    <label>Imię</label>
+                    <input id="newUserName" type="text" placeholder="Imię" required>
+                </div>
+                <div class="field">
+                    <label>Nazwisko</label>
+                    <input id="newUserSurname" type="text" placeholder="Nazwisko" required>
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input id="newUserEmail" type="email" placeholder="Email" required>
+                </div>
+                <div class="field">
+                    <label>Hasło</label>
+                    <input id="newUserPassword" type="password" placeholder="Hasło" required>
+                </div>
+                <div class="field">
+                    <label>Rola</label>
+                    <select id="newUserRole">
+                        <option value="user">Użytkownik</option>
+                        <option value="driver">Kierowca</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <button id="createUserBtn" class="btn-primary">Utwórz użytkownika</button>
+            </div>
+            <div id="createUserMsg" class="message"></div>
+        </div>
+
         <div class="panel" id="usersPanel">
             <div class="section-header">
                 <h3>Lista użytkowników</h3>
@@ -148,6 +192,20 @@
             <table id="usersTable">
                 <thead>
                     <tr><th>ID</th><th>Imię</th><th>Nazwisko</th><th>Email</th><th>Rola</th><th>Utworzono</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="panel" id="allRequestsPanel">
+            <div class="section-header">
+                <h3>Wszystkie zgłoszenia</h3>
+                <button id="refreshRequests" class="btn-ghost">Odśwież</button>
+                <button id="exportRequests" class="btn-ghost">Eksport CSV</button>
+            </div>
+            <table id="requestsTable">
+                <thead>
+                    <tr><th>ID</th><th>Tytuł</th><th>Lokalizacja</th><th>Status</th><th>Kurier</th><th>User ID</th><th>Utworzono</th><th>Akcje</th></tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -169,6 +227,7 @@
         const myRequestsPanel = document.getElementById('myRequestsPanel');
         const assignedPanel = document.getElementById('assignedPanel');
         const allRequestsPanel = document.getElementById('allRequestsPanel');
+        const createUserPanel = document.getElementById('createUserPanel');
         const usersPanel = document.getElementById('usersPanel');
 
         // role-based visibility
@@ -178,6 +237,7 @@
         myRequestsPanel.style.display = (isAdmin || role === 'user') ? 'block' : 'none';
         assignedPanel.style.display = isDriver ? 'block' : 'none';
         allRequestsPanel.style.display = isAdmin ? 'block' : 'none';
+        createUserPanel.style.display = isAdmin ? 'block' : 'none';
         usersPanel.style.display = isAdmin ? 'block' : 'none';
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -290,22 +350,142 @@
             }
         }
 
+        let allDrivers = [];
+
+        async function loadDriversList() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/users`, { headers });
+                const users = await res.json();
+                allDrivers = users.filter(u => u.role === 'driver');
+            } catch (err) {
+                console.error('Error loading drivers:', err);
+            }
+        }
+
         async function loadAllRequests() {
             const tbody = document.querySelector('#requestsTable tbody');
             if (!tbody) return;
-            tbody.innerHTML = '<tr><td colspan="7">Ładowanie...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">Ładowanie...</td></tr>';
             try {
                 const res = await fetch(`${API_BASE}/admin/requests`, { headers });
                 const data = await res.json();
                 tbody.innerHTML = '';
-                if (!data.length) { tbody.innerHTML = '<tr><td colspan="7">Brak rekordów</td></tr>'; return; }
+                if (!data.length) { tbody.innerHTML = '<tr><td colspan="8">Brak rekordów</td></tr>'; return; }
+                
                 data.forEach(r => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.location ?? ''}</td><td>${r.status ?? ''}</td><td>${r.courier_number ?? ''}</td><td>${r.user_id}</td><td>${r.created_at ?? ''}</td>`;
+                    
+                    // Komórki z danymi
+                    const idCell = document.createElement('td');
+                    idCell.textContent = r.id;
+                    const titleCell = document.createElement('td');
+                    titleCell.textContent = r.title;
+                    const locationCell = document.createElement('td');
+                    locationCell.textContent = r.location ?? '';
+                    const statusCell = document.createElement('td');
+                    statusCell.textContent = r.status ?? '';
+                    const courierCell = document.createElement('td');
+                    courierCell.textContent = r.courier_number ?? '';
+                    const userIdCell = document.createElement('td');
+                    userIdCell.textContent = r.user_id;
+                    const createdCell = document.createElement('td');
+                    createdCell.textContent = r.created_at ?? '';
+                    
+                    // Komórka z akcjami
+                    const actionsCell = document.createElement('td');
+                    actionsCell.style.display = 'flex';
+                    actionsCell.style.gap = '4px';
+                    
+                    // Select dla przypisywania kierowcy
+                    const driverSelect = document.createElement('select');
+                    driverSelect.style.fontSize = '0.85rem';
+                    driverSelect.style.padding = '4px 8px';
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Przypisz...';
+                    driverSelect.appendChild(defaultOption);
+                    
+                    allDrivers.forEach(driver => {
+                        const option = document.createElement('option');
+                        option.value = driver.email;
+                        option.textContent = `${driver.name} ${driver.surname}`;
+                        if (r.courier_number === driver.email) {
+                            option.selected = true;
+                        }
+                        driverSelect.appendChild(option);
+                    });
+                    
+                    driverSelect.addEventListener('change', async (e) => {
+                        if (e.target.value) {
+                            await assignRequestToDriver(r.id, e.target.value);
+                        }
+                    });
+                    
+                    // Przycisk usuwania
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Usuń';
+                    deleteBtn.className = 'btn-danger';
+                    deleteBtn.style.fontSize = '0.85rem';
+                    deleteBtn.style.padding = '4px 8px';
+                    deleteBtn.addEventListener('click', async () => {
+                        if (confirm(`Czy na pewno chcesz usunąć zlecenie "${r.title}"?`)) {
+                            await deleteRequest(r.id);
+                        }
+                    });
+                    
+                    actionsCell.appendChild(driverSelect);
+                    actionsCell.appendChild(deleteBtn);
+                    
+                    tr.appendChild(idCell);
+                    tr.appendChild(titleCell);
+                    tr.appendChild(locationCell);
+                    tr.appendChild(statusCell);
+                    tr.appendChild(courierCell);
+                    tr.appendChild(userIdCell);
+                    tr.appendChild(createdCell);
+                    tr.appendChild(actionsCell);
+                    
                     tbody.appendChild(tr);
                 });
             } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="7">Błąd ładowania</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8">Błąd ładowania</td></tr>';
+            }
+        }
+
+        async function deleteRequest(requestId) {
+            try {
+                const res = await fetch(`${API_BASE}/admin/requests/${requestId}`, {
+                    method: 'DELETE',
+                    headers
+                });
+                
+                if (res.ok) {
+                    await loadAllRequests();
+                } else {
+                    alert('Błąd podczas usuwania zlecenia');
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+                alert('Błąd podczas usuwania zlecenia');
+            }
+        }
+
+        async function assignRequestToDriver(requestId, driverEmail) {
+            try {
+                const res = await fetch(`${API_BASE}/admin/requests/${requestId}/assign`, {
+                    method: 'PATCH',
+                    headers,
+                    body: JSON.stringify({ courier_number: driverEmail })
+                });
+                
+                if (res.ok) {
+                    await loadAllRequests();
+                } else {
+                    alert('Błąd podczas przypisywania kierowcy');
+                }
+            } catch (err) {
+                console.error('Assign error:', err);
+                alert('Błąd podczas przypisywania kierowcy');
             }
         }
 
@@ -327,6 +507,49 @@
                 tbody.innerHTML = '<tr><td colspan="6">Błąd ładowania</td></tr>';
             }
         }
+
+        document.getElementById('createUserBtn').addEventListener('click', async () => {
+            const name = document.getElementById('newUserName').value;
+            const surname = document.getElementById('newUserSurname').value;
+            const email = document.getElementById('newUserEmail').value;
+            const password = document.getElementById('newUserPassword').value;
+            const role = document.getElementById('newUserRole').value;
+            const createUserMsg = document.getElementById('createUserMsg');
+            
+            if (!name || !surname || !email || !password) {
+                msg(createUserMsg, 'Uzupełnij wszystkie pola', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin/users`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ name, surname, email, password, role })
+                });
+                
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    msg(createUserMsg, e.detail || 'Nie udało się utworzyć użytkownika', 'error');
+                    return;
+                }
+                
+                const data = await res.json();
+                msg(createUserMsg, `Użytkownik ${data.user.email} (${data.user.role}) został utworzony pomyślnie!`, 'success');
+                
+                // Wyczyść formularz
+                document.getElementById('newUserName').value = '';
+                document.getElementById('newUserSurname').value = '';
+                document.getElementById('newUserEmail').value = '';
+                document.getElementById('newUserPassword').value = '';
+                document.getElementById('newUserRole').value = 'user';
+                
+                // Odśwież listę użytkowników
+                await loadUsers();
+            } catch (err) {
+                msg(createUserMsg, 'Błąd sieci podczas tworzenia użytkownika', 'error');
+            }
+        });
 
         document.getElementById('refreshMyRequests').addEventListener('click', loadMyRequests);
         document.getElementById('refreshAssigned').addEventListener('click', loadAssigned);
@@ -380,11 +603,100 @@
             }
         });
 
+        // Autocomplete dla lokalizacji - inicjalizacja po ustawieniu widoczności paneli
+        function initAutocomplete() {
+            let autocompleteTimeout;
+            const locationInput = document.getElementById('reqLocation');
+            const suggestionsList = document.getElementById('locationSuggestions');
+
+            if (!locationInput || !suggestionsList) {
+                console.warn('Autocomplete elements not found');
+                return;
+            }
+
+            async function searchLocation(query) {
+                if (!query || query.length < 3) {
+                    suggestionsList.classList.remove('show');
+                    return;
+                }
+
+                try {
+                    suggestionsList.innerHTML = '<div class="autocomplete-loading">Szukam...</div>';
+                    suggestionsList.classList.add('show');
+
+                    const response = await fetch(
+                        `http://localhost:8001/geocode/search?q=${encodeURIComponent(query)}&limit=5`
+                    );
+
+                    if (!response.ok) throw new Error();
+                    const results = await response.json();
+
+                    suggestionsList.innerHTML = '';
+                    
+                    if (results.length === 0) {
+                        suggestionsList.innerHTML = '<div class="autocomplete-loading">Nie znaleziono adresu</div>';
+                        return;
+                    }
+
+                    results.forEach(result => {
+                        const item = document.createElement('div');
+                        item.className = 'autocomplete-item';
+                        
+                        // Wyświetl adres w formacie: <miasto>, <ulica> <numer>
+                        item.textContent = result.display_name;
+                        
+                        item.addEventListener('click', () => {
+                            // Zapisz w dokładnie takim samym formacie
+                            locationInput.value = result.display_name;
+                            suggestionsList.classList.remove('show');
+                        });
+                        suggestionsList.appendChild(item);
+                    });
+
+                } catch (err) {
+                    console.error('Autocomplete error:', err);
+                    suggestionsList.innerHTML = '<div class="autocomplete-loading">Błąd wyszukiwania</div>';
+                }
+            }
+
+            locationInput.addEventListener('input', (e) => {
+                clearTimeout(autocompleteTimeout);
+                autocompleteTimeout = setTimeout(() => {
+                    searchLocation(e.target.value);
+                }, 500);
+            });
+
+            locationInput.addEventListener('focus', (e) => {
+                if (e.target.value.length >= 3) {
+                    searchLocation(e.target.value);
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!locationInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                    suggestionsList.classList.remove('show');
+                }
+            });
+
+            console.log('Autocomplete initialized');
+        }
+
         // initial load
         loadProfile();
         if (isAdmin || role === 'user') loadMyRequests();
-        if (isAdmin) { loadAllRequests(); loadUsers(); loadAssigned(); }
+        if (isAdmin) { 
+            loadDriversList().then(() => {
+                loadAllRequests(); 
+                loadUsers(); 
+                loadAssigned(); 
+            });
+        }
         else if (isDriver) { loadAssigned(); }
+
+        // Inicjalizuj autocomplete po załadowaniu paneli
+        if (isAdmin || role === 'user') {
+            setTimeout(initAutocomplete, 100);
+        }
     </script>
 </body>
 </html>

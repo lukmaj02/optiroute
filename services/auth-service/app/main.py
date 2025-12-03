@@ -5,6 +5,7 @@ import csv
 from datetime import datetime, timedelta
 from typing import Optional
 
+import httpx
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -87,6 +88,14 @@ class UserCreateRequest(BaseModel):
     password: str
 
 
+class AdminUserCreateRequest(BaseModel):
+    name: str
+    surname: str
+    email: str
+    password: str
+    role: str = "user"
+
+
 class Token(BaseModel):
     name: str
     surname: str
@@ -119,6 +128,10 @@ class RequestCreate(BaseModel):
     title: str
     description: Optional[str] = None
     location: Optional[str] = None
+
+
+class RequestAssign(BaseModel):
+    courier_number: str
 
 
 class RequestResponse(BaseModel):
@@ -252,7 +265,10 @@ def register_user(user_data: UserCreateRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/admin/users")
-def list_users(db: Session = Depends(get_db)):
+def list_users(db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Dostęp tylko dla administratorów")
+    
     users = db.query(UserDB).all()
     return [
         {
@@ -265,6 +281,48 @@ def list_users(db: Session = Depends(get_db)):
         }
         for user in users
     ]
+
+
+@app.post("/admin/users", status_code=201)
+def create_user_by_admin(
+    user_data: AdminUserCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Dostęp tylko dla administratorów")
+    
+    # Sprawdź czy email jest wolny
+    existing_user = db.query(UserDB).filter(UserDB.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email jest już zajęty")
+    
+    # Walidacja roli
+    valid_roles = ["admin", "driver", "user"]
+    if user_data.role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Nieprawidłowa rola. Dozwolone: {', '.join(valid_roles)}")
+    
+    # Tworzenie użytkownika
+    hashed_pw = get_password_hash(user_data.password)
+    new_user = UserDB(
+        name=user_data.name,
+        surname=user_data.surname,
+        email=user_data.email,
+        password=hashed_pw,
+        role=user_data.role
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return {
+        "message": "Użytkownik utworzony pomyślnie",
+        "user": {
+            "id": new_user.id,
+            "email": new_user.email,
+            "role": new_user.role
+        }
+    }
 
 
 @app.get("/admin/jobs")
@@ -359,6 +417,55 @@ def export_requests_csv(db: Session = Depends(get_db)):
     return FileResponse(file_path, media_type="text/csv", filename="requests.csv")
 
 
+@app.delete("/admin/requests/{request_id}", status_code=204)
+def delete_request(
+    request_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Usuń zlecenie (tylko admin)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    request = db.query(RequestDB).filter(RequestDB.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    db.delete(request)
+    db.commit()
+    return None
+
+
+@app.patch("/admin/requests/{request_id}/assign", response_model=RequestResponse)
+def assign_request(
+    request_id: uuid.UUID,
+    assign_data: RequestAssign,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Przypisz zlecenie do kierowcy (tylko admin)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    request = db.query(RequestDB).filter(RequestDB.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    # Sprawdź czy kierowca istnieje
+    driver = db.query(UserDB).filter(
+        UserDB.email == assign_data.courier_number,
+        UserDB.role == "driver"
+    ).first()
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    
+    request.courier_number = assign_data.courier_number
+    request.status = "assigned"
+    db.commit()
+    db.refresh(request)
+    return request
+
+
 @app.get("/requests/assigned/export")
 def export_assigned_requests_csv(
     db: Session = Depends(get_db),
@@ -401,3 +508,79 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "surname": user.surname,
         "role": user.role,
     }
+
+
+@app.get("/geocode/search")
+async def geocode_search(q: str, limit: int = 20):
+    """
+    Proxy endpoint dla Nominatim API (OpenStreetMap)
+    Format: <miasto>, <ulica> <numer>
+    """
+    if not q or len(q) < 3:
+        return []
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={
+                    "q": q,
+                    "format": "json",
+                    "limit": limit,
+                    "addressdetails": 1,
+                    "countrycodes": "pl"
+                },
+                headers={
+                    "User-Agent": "OptiRoute-App/1.0"
+                },
+                timeout=10.0
+            )
+            response.raise_for_status()
+            results = response.json()
+            
+            # Formatuj wyniki do struktury: <miasto>, <ulica> <numer>
+            formatted_results = []
+            seen = set()  # Unikanie duplikatów
+            
+            for result in results:
+                address = result.get("address", {})
+                
+                # Pobierz komponenty adresu
+                city = (
+                    address.get("city") or 
+                    address.get("town") or 
+                    address.get("village") or 
+                    address.get("municipality") or
+                    address.get("county")
+                )
+                
+                street = address.get("road")
+                house_number = address.get("house_number", "")
+                
+                # Jeśli mamy przynajmniej miasto lub ulicę
+                if city or street:
+                    parts = []
+                    if city:
+                        parts.append(city)
+                    if street:
+                        street_part = street
+                        if house_number:
+                            street_part += f" {house_number}"
+                        parts.append(street_part)
+                    
+                    formatted_address = ", ".join(parts)
+                    
+                    # Unikaj duplikatów
+                    if formatted_address not in seen:
+                        seen.add(formatted_address)
+                        formatted_results.append({
+                            "display_name": formatted_address,
+                            "lat": result.get("lat"),
+                            "lon": result.get("lon"),
+                            "address": address
+                        })
+            
+            return formatted_results
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Geocoding error: {str(e)}")
