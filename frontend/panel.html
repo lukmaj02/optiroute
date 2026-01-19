@@ -213,7 +213,7 @@
     </div>
 
     <script>
-        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin;
+        const API_BASE = `${window.location.origin}/api/auth`;
         const UPLOAD_URL = '/api/v1/upload';
         const token = localStorage.getItem('optiroute_token');
         const role = (localStorage.getItem('optiroute_role') || '').toLowerCase();
