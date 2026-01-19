@@ -159,8 +159,8 @@
             }
 
             try {
-                const apiUrl = window.location.origin.includes('localhost') ? 'http://localhost:8001' : window.location.origin;
-                const response = await fetch(apiUrl + '/register', {
+                const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin;
+                const response = await fetch(apiBase + '/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name, surname: surname, email: email, password: password })
