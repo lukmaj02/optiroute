@@ -62,11 +62,13 @@ services:
       DATABASE_URL: postgresql://optiroute:optiroute123@postgres:5432/optiroute
       RABBITMQ_URL: amqp://optiroute:optiroute123@rabbitmq:5672/
       TOMTOM_API_KEY: "19esvUIUdVPlPeqO7yNKqtlf481fncJT"
+      REDIS_URL: redis://redis:6379
     volumes:
       - shared_uploads:/app/shared/uploads
     depends_on:
       - postgres
       - rabbitmq
+      - redis
     networks:
       - optiroute-network
 
@@ -86,8 +88,16 @@ services:
       context: ./services/data-aggregator-service
       dockerfile: Dockerfile
     environment:
-      OPENWEATHERMAP_API_KEY: "your_api_key_here"
-      OPENAQ_API_KEY: "your_api_key_here"
+      OPENWEATHERMAP_API_KEY: ""
+      OPENAQ_API_KEY: ""
+    networks:
+      - optiroute-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: optiroute-redis
+    ports:
+      - "6379:6379"
     networks:
       - optiroute-network
 

@@ -1,19 +1,40 @@
 import httpx
 import time
+import os
+import json
+import redis
 from typing import Optional, Tuple
 
 # URL do API Nominatim
 NOMINATIM_API_URL = "https://nominatim.openstreetmap.org/search"
 # Nominatim wymaga, abyśmy się przedstawili (User-Agent). Wpisz tu nazwę swojego projektu.
-HEADERS = {"User-Agent": "OptiRoute-Project (wwada-studia)"} 
+HEADERS = {"User-Agent": "OptiRoute-Project (wwada-studia)"}
+
+# Redis cache
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
+redis_client = redis.from_url(REDIS_URL) 
 
 def geocode_address(address: str) -> Optional[Tuple[float, float]]:
     """
     Zamienia adres tekstowy na współrzędne (latitude, longitude)
-    używając API Nominatim.
+    używając API Nominatim z cache Redis.
 
     Zwraca (lat, lon) lub None, jeśli się nie uda.
     """
+    cache_key = f"geocode:{address}"
+    
+    # Sprawdź cache
+    cached = redis_client.get(cache_key)
+    if cached:
+        try:
+            data = json.loads(cached)
+            if data:
+                return (data[0], data[1])
+            else:
+                return None
+        except json.JSONDecodeError:
+            pass  # Kontynuuj do API
+    
     params = {
         'q': address,
         'format': 'json',
@@ -33,9 +54,12 @@ def geocode_address(address: str) -> Optional[Tuple[float, float]]:
                 # Zwróć (latitude, longitude)
                 lat = float(data[0]['lat'])
                 lon = float(data[0]['lon'])
+                # Zapisz do cache na 24 godziny
+                redis_client.setex(cache_key, 86400, json.dumps([lat, lon]))
                 return (lat, lon)
             else:
-                # Nie znaleziono adresu
+                # Nie znaleziono adresu, zapisz None do cache
+                redis_client.setex(cache_key, 86400, json.dumps(None))
                 return None
 
     except httpx.HTTPStatusError as e:

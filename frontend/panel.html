@@ -213,7 +213,7 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8001';
+        const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:8001' : window.location.origin;
         const UPLOAD_URL = '/api/v1/upload';
         const token = localStorage.getItem('optiroute_token');
         const role = (localStorage.getItem('optiroute_role') || '').toLowerCase();
@@ -625,7 +625,7 @@
                     suggestionsList.classList.add('show');
 
                     const response = await fetch(
-                        `http://localhost:8001/geocode/search?q=${encodeURIComponent(query)}&limit=5`
+                        `${API_BASE}/geocode/search?q=${encodeURIComponent(query)}&limit=5`
                     );
 
                     if (!response.ok) throw new Error();
